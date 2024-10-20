@@ -1,7 +1,11 @@
 asgiref==3.8.1
 Django==5.1.2
+packaging==24.1
+pdf2image==1.17.0
+pillow==11.0.0
 psycopg2==2.9.10
 psycopg2-binary==2.9.10
+pytesseract==0.3.13
 python-dotenv==1.0.1
 sqlparse==0.5.1
 tzdata==2024.2
