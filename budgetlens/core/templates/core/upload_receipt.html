@@ -1,0 +1,35 @@
+<!-- templates/core/upload_receipt.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Receipt</title>
+</head>
+<body>
+    <h1>Upload a Receipt</h1>
+    
+    <!-- Display any form errors -->
+    {% if form.errors %}
+        <div style="color: red;">
+            <ul>
+                {% for field in form %}
+                    {% if field.errors %}
+                        <li>{{ field.label }}: {{ field.errors|striptags }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <!-- Form for uploading receipt -->
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Upload</button>
+    </form>
+
+    <!-- Link to go back to the homepage or receipts list -->
+    <p><a href="{% url 'index' %}">Back to Home</a></p>
+</body>
+</html>
