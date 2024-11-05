@@ -68,10 +68,10 @@
 
 After the basic installation, you have to initialize the Django App and DB properly. First we need to start the DB. In order to get started easy, I have provided a docker compose script in `.extras/compose` for the DB.
 
-1. **Start the DB:**
+> [!NOTE]
+> This step requires at minimum a [Docker Engine](https://docs.docker.com/engine/install) installation.
 
-    > [!IMPORTANT]
-    > This step requires at minimum a [Docker Engine](https://docs.docker.com/engine/install) installation.
+1. **Start the DB:**
 
     In a terminal execute the following prompts.
 
@@ -121,13 +121,15 @@ After the basic installation, you have to initialize the Django App and DB prope
         PREFERRED_CURRENCY=EUR
         ```
 
-        > [!IMPORTANT]
+        > ❗**Important**
+        >
         > Keep in mind, these are only example variables. Never ever upload or expose them to the public.
         > Be especially careful with API keys.
 
 1. **Migrate the DB:**
 
-    > [!IMPORTANT]
+    > ❗**Important**
+    >
     > The Python `venv` has to be activated for these steps.
 
     In another terminal window execute the following prompts.
