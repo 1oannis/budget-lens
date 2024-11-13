@@ -1,5 +1,6 @@
 asgiref==3.8.1
 Django==5.1.2
+openai==1.54.4
 packaging==24.1
 pdf2image==1.17.0
 pillow==11.0.0

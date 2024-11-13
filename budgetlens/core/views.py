@@ -1,98 +1,95 @@
-import pytesseract
-from PIL import Image
-import re
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Receipt
-from .forms import ReceiptUploadForm
-from django.core.files.storage import default_storage
-from pdf2image import convert_from_path
+import base64
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from openai import OpenAI
+from .forms import ExpenseForm
+from .models import Expense
+import json
 
+client = OpenAI()
+
+
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
+
+def process_receipt(image_path):
+    print("views : process_receipt()")
+    base64_image = encode_image(image_path)
+    category = "Sample Category"
+    expense_date = "2024-11-13"
+    amount = 10.00
+    currency = "EUR"
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Analyze this receipt. Tell me the category, date, amount(decimal) and currency (three characters) of the expense. Respond in the json format: {category: <category>, date: <date>, amount: <amount>, currency: <currency>} . Don't use any extra markup language just the JSON beginning and ending with the braces.",
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url":  f"data:image/jpeg;base64,{base64_image}"
+                        },
+                    },
+                ],
+            }
+        ],
+    )
+
+    print("Response from OpenAI")
+    print(response.choices[0].message.content)
+
+    if response.choices[0].message.content is None:
+        print("Error in response")
+        return category, expense_date, amount, currency
+
+    response_data = json.loads(response.choices[0].message.content)
+
+    category = response_data.get("category")
+    expense_date = response_data.get("date")
+    amount = response_data.get("amount")
+    currency = response_data.get("currency")
+
+    return category, expense_date, amount, currency
+
+
+@login_required
 def upload_receipt(request):
+    response = None
+    print("views : upload_receipt()")
     if request.method == 'POST':
-        form = ReceiptUploadForm(request.POST, request.FILES)
+        form = ExpenseForm(request.POST, request.FILES)
         if form.is_valid():
-            receipt = form.save(commit=False)
-            receipt.user = request.user
-            receipt.save()
-
-            # Process the receipt with OCR and extract necessary data
-            process_receipt_ocr(receipt)
-
-            return redirect('receipt_detail', receipt_id=receipt.receipt_id)
+            expense = form.save(commit=False)
+            expense.user = request.user
+            expense.save()
+            # Process the receipt image
+            category, expense_date, amount, currency = process_receipt(expense.receipt_image.path)
+            # Update the expense instance
+            expense.category = category
+            expense.expense_date = expense_date
+            expense.amount = amount
+            expense.save()
+            # Prepare the response to display
+            response = {
+                'category': category,
+                'expense_date': expense_date,
+                'amount': amount,
+                'currency': currency,
+            }
+        else:
+            print("Form errors:", form.errors)
     else:
-        form = ReceiptUploadForm()
-    return render(request, 'core/upload_receipt.html', {'form': form})
+        form = ExpenseForm()
+    return render(request, 'upload.html', {'form': form, 'response': response})
 
-def process_receipt_ocr(receipt):
-    """
-    Processes the uploaded receipt image/PDF using Tesseract OCR and parses the result to extract:
-    - Merchant name
-    - Date
-    - Amount
-    - Description
-    """
-    # Open the image or PDF
-    if receipt.image_path.path.endswith('.pdf'):
-        # Handle PDFs - For simplicity, we'll assume 1-page PDFs and convert to image
-        images = convert_from_path(receipt.image_path.path)
-        image = images[0]  # Taking only the first page
-    else:
-        image = Image.open(receipt.image_path.path)
-
-    # Perform OCR with Tesseract
-    ocr_result = pytesseract.image_to_string(image, lang='eng+deu+kor+ell')
-
-    # Parse the OCR result using regular expressions and custom logic
-    merchant_name = extract_merchant_name(ocr_result)
-    date = extract_date(ocr_result)
-    amount = extract_amount(ocr_result)
-    description = extract_description(ocr_result)
-
-    # Save the parsed data into the receipt model
-    receipt.merchant_name = merchant_name
-    receipt.date = date
-    receipt.amount = amount
-    receipt.description = description
-    receipt.save()
-
-def extract_merchant_name(text):
-    """
-    A very basic approach to extracting merchant name. This would likely require NLP in a real-world scenario.
-    """
-    # Assume first line is merchant name, further parsing can be added later
-    return text.split('\n')[0]
-
-def extract_date(text):
-    """
-    Extract a date in formats like MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD using regex.
-    """
-    date_pattern = r'\b(\d{2}[/-]\d{2}[/-]\d{4}|\d{4}[/-]\d{2}[/-]\d{2})\b'
-    match = re.search(date_pattern, text)
-    if match:
-        return match.group(0)
-    return None
-
-def extract_amount(text):
-    """
-    Extract an amount from the text using regex. We'll search for patterns like '€123.45' or '123,45 USD'.
-    """
-    amount_pattern = r'(\d+[.,]\d{2})\s*(USD|EUR|₩|KRW|GBP|£)?'
-    match = re.search(amount_pattern, text)
-    if match:
-        amount_str = match.group(1).replace(',', '.')
-        return float(amount_str)  # Convert to float for saving as DecimalField
-    return None
-
-def extract_description(text):
-    """
-    Extracts the description, for simplicity taking the second line.
-    """
-    lines = text.split('\n')
-    return lines[1] if len(lines) > 1 else "No Description"
-
-def receipt_detail(request, receipt_id):
-    receipt = get_object_or_404(Receipt, receipt_id=receipt_id)
-    return render(request, 'core/receipt_detail.html', {'receipt': receipt})
-
-def index(request):
-    return render(request, 'core/index.html')
+@login_required
+def dashboard(request):
+    expenses = Expense.objects.filter(user=request.user)
+    return render(request, 'dashboard.html', {'expenses': expenses})

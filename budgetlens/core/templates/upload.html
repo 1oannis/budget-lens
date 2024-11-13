@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Upload Receipt</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.receipt_image.label_tag }} {{ form.receipt_image }}
+    <button type="submit">Upload</button>
+  </form>
+
+  {% if response %}
+    <h3>Processed Receipt Details:</h3>
+    <ul>
+      <li><strong>Category:</strong> {{ response.category }}</li>
+      <li><strong>Expense Date:</strong> {{ response.expense_date }}</li>
+      <li><strong>Amount:</strong> {{ response.amount }}</li>
+      <li><strong>Currency:</strong> {{ response.currency }}</li>
+    </ul>
+  {% endif %}
+{% endblock %}
+
+<script>
+    document.querySelector("form").onsubmit = async function(event) {
+      event.preventDefault();
+      let formData = new FormData(this);
+      let response = await fetch("{% url 'upload' %}", {
+        method: "POST",
+        body: formData,
+      });
+      let result = await response.text();
+      document.body.innerHTML = result;
+    };
+</script>
+  

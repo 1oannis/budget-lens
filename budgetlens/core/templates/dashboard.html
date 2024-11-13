@@ -1,0 +1,22 @@
+<!-- dashboard.html -->
+<h1>Dashboard</h1>
+<table>
+    <tr>
+        <th>Receipt</th>
+        <th>Category</th>
+        <th>Date</th>
+        <th>Amount</th>
+        <th>Actions</th>
+    </tr>
+    {% for expense in expenses %}
+    <tr>
+        <td><a href="{{ expense.receipt_image.url }}">View</a></td>
+        <td>{{ expense.category }}</td>
+        <td>{{ expense.expense_date }}</td>
+        <td>{{ expense.amount }}</td>
+        <td>
+            <!-- Add links for editing and deleting -->
+        </td>
+    </tr>
+    {% endfor %}
+</table>
