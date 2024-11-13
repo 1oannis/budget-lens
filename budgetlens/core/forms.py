@@ -1,10 +1,13 @@
 from django import forms
-from .models import Receipt
+from .models import Expense
 
-class ReceiptUploadForm(forms.ModelForm):
+class ExpenseForm(forms.ModelForm):
     class Meta:
-        model = Receipt  # Bind the form to the Receipt model
-        fields = ['image_path']  # Only allow image uploads
+        model = Expense
+        fields = ['receipt_image', 'category', 'expense_date', 'amount', 'currency']
         widgets = {
-            'image_path': forms.ClearableFileInput(attrs={'accept': 'image/*,application/pdf'})
+            'category': forms.TextInput(attrs={'required': False}),
+            'expense_date': forms.DateInput(attrs={'required': False}),
+            'amount': forms.NumberInput(attrs={'required': False}),
+            'currency': forms.TextInput(attrs={'required': False}),
         }

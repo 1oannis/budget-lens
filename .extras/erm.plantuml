@@ -1,32 +1,19 @@
-@startuml expense-tracker
+@startuml budget-lens
 entity User {
   * user_id : UUID [PK]
   * username : VARCHAR
   * password_hash : VARCHAR
 }
 
-entity Receipt {
-  * receipt_id : UUID [PK]
-  * user_id : UUID [FK -> User.user_id]
-  * image_path : TEXT
-  * upload_date : TIMESTAMP
-}
-
 entity Expense {
   * expense_id : UUID [PK]
-  * receipt_id : UUID [FK -> Receipt.receipt_id]
-  * merchant_name : VARCHAR
-  * amount : DECIMAL
-  * currency : VARCHAR
-  * converted_amount : DECIMAL
+  * user_id : UUID [FK]
+  * receipt_image : VARCHAR
   * category : VARCHAR
-  * account_id : UUID [FK -> Account.account_id]
+  * expense_date : DATE
+  * amount : DECIMAL(10,2)
+  * currency : VARCHAR
 }
 
-entity Account {
-  * account_id : UUID [PK]
-  * user_id : UUID [FK -> User.user_id]
-  * account_name : VARCHAR
-  * account_type : VARCHAR
-}
+User ||--o{ Expense : has
 @enduml

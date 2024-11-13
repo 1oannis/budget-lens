@@ -58,6 +58,12 @@
         source myenv/bin/activate
         ```
 
+1. Upgrade pip if necessary:
+
+    ```PowerShell
+    python -m pip install --upgrade pip
+    ```
+
 1. Install the required dependencies:
 
     ```PowerShell
