@@ -1,10 +1,13 @@
 import base64
+import logging
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from openai import OpenAI
 from .forms import ExpenseForm
 from .models import Expense
 import json
+
+log = logging.getLogger(__name__)
 
 client = OpenAI()
 
@@ -15,12 +18,19 @@ def encode_image(image_path):
 
 
 def process_receipt(image_path):
-    print("views : process_receipt()")
+    log.debug("views : process_receipt()")
     base64_image = encode_image(image_path)
     category = "Sample Category"
     expense_date = "2024-11-13"
     amount = 10.00
     currency = "EUR"
+
+    base_categories = (
+        "Housing,Utilities,Transportation,Groceries,Dining Out,Healthcare,"
+        "Debt Payments,Insurance,Clothing,Entertainment,"
+        "Education,Childcare,Pet Care,Subscriptions,Miscellaneous"
+    )
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -29,7 +39,7 @@ def process_receipt(image_path):
                 "content": [
                     {
                         "type": "text",
-                        "text": "Analyze this receipt. Tell me the category, date, amount(decimal) and currency (three characters) of the expense. Respond in the json format: {category: <category>, date: <date>, amount: <amount>, currency: <currency>} . Don't use any extra markup language just the JSON beginning and ending with the braces.",
+                        "text": f"Analyze this receipt. Tell me the category(one of these: {base_categories}), date, amount(as decimal; if you see a comma it might be a thousand separator or a decimal separator; in KRW its never lower than thousand) and currency (three characters ISO 4217 code) of the expense. Respond in the json format: (category: <category>, date: <date>, amount: <amount>, currency: <currency>) . Don't use any extra markup language just the JSON beginning and ending with the braces.",
                     },
                     {
                         "type": "image_url",
@@ -42,11 +52,11 @@ def process_receipt(image_path):
         ],
     )
 
-    print("Response from OpenAI")
-    print(response.choices[0].message.content)
+    log.debug("Response from OpenAI")
+    log.debug(response.choices[0].message.content)
 
     if response.choices[0].message.content is None:
-        print("Error in response")
+        log.error("Error in response")
         return category, expense_date, amount, currency
 
     response_data = json.loads(response.choices[0].message.content)
@@ -55,6 +65,7 @@ def process_receipt(image_path):
     expense_date = response_data.get("date")
     amount = response_data.get("amount")
     currency = response_data.get("currency")
+    log.debug("currency: %s", currency)
 
     return category, expense_date, amount, currency
 
@@ -62,7 +73,7 @@ def process_receipt(image_path):
 @login_required
 def upload_receipt(request):
     response = None
-    print("views : upload_receipt()")
+    log.debug("views : upload_receipt()")
     if request.method == 'POST':
         form = ExpenseForm(request.POST, request.FILES)
         if form.is_valid():
@@ -75,6 +86,7 @@ def upload_receipt(request):
             expense.category = category
             expense.expense_date = expense_date
             expense.amount = amount
+            expense.currency = currency
             expense.save()
             # Prepare the response to display
             response = {
@@ -84,7 +96,7 @@ def upload_receipt(request):
                 'currency': currency,
             }
         else:
-            print("Form errors:", form.errors)
+            log.error("Form errors: %s", form.errors)
     else:
         form = ExpenseForm()
     return render(request, 'upload.html', {'form': form, 'response': response})
