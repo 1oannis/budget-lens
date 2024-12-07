@@ -55,10 +55,10 @@ def process_receipt(image_path):
                             "3. Amount: Extract the expense amount as a decimal number. Consider: "
                             "- A comma may serve as a thousand separator or decimal separator. "
                             "- In KRW (Korean Won), the amount is never lower than a thousand. "
-                            "4. Currency: Identify the currency used in the expense "
+                            "4. Currency: Identify the currency used in the expense starting "
                             "(three-character ISO 4217 code). Respond strictly in JSON format, "
-                            "starting and ending with braces, without any additional markup or "
-                            "explanation. Example response: {\"category\": \"<category>\","
+                            "and ending with braces, without any additional markup language "
+                            "or explanation. Example response: {\"category\": \"<category>\","
                             " \"date\": \"<date>\", \"amount\": <amount>,"
                             " \"currency\": \"<currency>\"}"
                         ),
@@ -72,22 +72,39 @@ def process_receipt(image_path):
         ],
     )
 
-    log.debug("Response from OpenAI")
-    log.debug(response.choices[0].message.content)
+    try:
+        if not response or not response.choices or not response.choices[0].message.content:
+            raise ValueError("Empty or invalid response from OpenAI API")
 
-    if response.choices[0].message.content is None:
-        log.error("Error in response")
+        content = response.choices[0].message.content.strip()
+        log.debug("Response from OpenAI")
+        log.debug(content)
+
+        if content.startswith("```json") and content.endswith("```"):
+            log.debug("Content: %s", content)
+            content = content[7:-3].strip()
+            log.debug("Content after stripping markdown: %s", content)
+
+        response_data = json.loads(content)
+
+        if "/" in response_data.get("date"):
+            response_data["date"] = response_data["date"].replace("/", "-")
+
+        category = response_data.get("category")
+        expense_date = response_data.get("date")
+        amount = response_data.get("amount")
+        currency = response_data.get("currency").upper()
+
         return category, expense_date, amount, currency
-
-    response_data = json.loads(response.choices[0].message.content)
-
-    category = response_data.get("category")
-    expense_date = response_data.get("date")
-    amount = response_data.get("amount")
-    currency = response_data.get("currency")
-
-    return category, expense_date, amount, currency
-
+    except json.JSONDecodeError as e:
+        log.error("JSON decode error: %s", e)
+        raise
+    except ValueError as e:
+        log.error("Value error: %s", e)
+        raise
+    except Exception as e:
+        log.error("Unexpected error: %s", e)
+        raise
 
 def get_exchange_rate(date, from_currency, to_currency):
     """Get the exchange rate for the given date and currencies"""
