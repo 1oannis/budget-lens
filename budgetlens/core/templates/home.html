@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+{% if user.is_authenticated %}
+<p>Hi {{ user.username }}!</p>
+<p><a href="{% url 'password_change' %}">Password Change</a></p>
+{% else %}
+<div style="text-align: center;">
+    <p>You are not logged in</p>
+    <p>
+        <a href="{% url 'login' %}" style="margin-right: 10px;">Log In</a>
+        <a href="{% url 'signup' %}" style="margin-right: 10px;">Sign Up</a>
+        <a href="{% url 'password_reset' %}">Password Reset</a>
+    </p>
+</div>
+{% endif %}
+{% endblock %}
