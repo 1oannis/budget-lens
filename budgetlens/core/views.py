@@ -6,7 +6,7 @@ import json
 import os
 import requests
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from openai import OpenAI
 from .forms import ExpenseForm
 from .models import Expense, UserProfile
@@ -189,3 +189,13 @@ def dashboard(request):
     """View to display the user's expenses"""
     expenses = Expense.objects.filter(user=request.user)
     return render(request, "dashboard.html", {"expenses": expenses})
+
+@login_required
+def expense(request, expense_id):
+    """View to display the details of a specific expense"""
+    log.debug("views : expense()")
+    log.debug("Expense ID: %s", expense_id)
+    expense_detail = Expense.objects.get(id=expense_id, user=request.user)
+    log.debug("Expense detail: %s", expense_detail.expense_date)
+    log.debug("User Currency: %s", request.user.userprofile.target_currency)
+    return render(request, "expense.html", {"expense": expense_detail, "user": request.user})

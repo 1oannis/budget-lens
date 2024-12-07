@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Edit Expense</h2>
+    <form action="/save_expense" method="post">
+        <!-- Category Row -->
+        <div class="form-group">
+            <label for="expenseCategory">Category:</label>
+            <input type="text" id="expenseCategory" name="expenseCategory" value="{{ expense.category }}" required>
+        </div>
+
+        <!-- Amount and Currency Row -->
+        <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+            <div>
+                <label for="expenseAmount">Amount:</label>
+                <input type="number" id="expenseAmount" name="expenseAmount" value="{{ expense.amount }}" required>
+            </div>
+            <div>
+                <label for="expenseCurrency">Currency:</label>
+                <input type="text" id="expenseCurrency" name="expenseCurrency" value="{{ expense.currency }}" required>
+            </div>
+        </div>
+
+        <!-- Converted Amount and Target Currency Row -->
+        <div class="form-group" style="display: flex; gap: 30px; align-items: center;">
+            <div>
+                <label for="targetAmount">Converted:</label>
+                <p id="targetAmount">{{ expense.amount_in_target_currency }}</p>
+            </div>
+            <div>
+                <label for="targetCurrency">Target Currency:</label>
+                <p id="targetCurrency">{{ user.user_profile.target_currency }}</p>
+            </div>
+        </div>
+
+        <!-- Date Row -->
+        <div class="form-group">
+            <label for="expenseDate">Date:</label>
+            <input type="date" id="expenseDate" name="expenseDate" value="{{ expense.expense_date|date:'Y-m-d' }}" pattern="\d{4}-\d{2}-\d{2}" required>
+        </div>
+
+        <!-- Save Button -->
+        <div class="form-group">
+            <button type="submit">Save</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
