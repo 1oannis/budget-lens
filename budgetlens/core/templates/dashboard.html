@@ -1,25 +1,22 @@
-{% extends 'home.html' %}
+{% extends 'base.html' %}
 
 {% block content %}
 <!-- dashboard.html -->
 <h2>Dashboard</h2>
 <table>
     <tr>
-        <th>Receipt</th>
         <th>Category</th>
-        <th>Date</th>
         <th>Amount</th>
-        <th>Actions</th>
+        <th>Currency</th>
+        <th>Date</th>
     </tr>
     {% for expense in expenses %}
-    <tr>
-        <td><a href="{{ expense.receipt_image.url }}">View</a></td>
+    <tr onclick="window.location.href='{% url 'expense' expense.id %}'" style="cursor: pointer;">
+        {% csrf_token %}
         <td>{{ expense.category }}</td>
-        <td>{{ expense.expense_date }}</td>
         <td>{{ expense.amount }}</td>
-        <td>
-            <!-- Add links for editing and deleting -->
-        </td>
+        <td>{{ expense.currency }}</td>
+        <td>{{ expense.expense_date}}</td>
     </tr>
     {% endfor %}
 </table>
