@@ -7,16 +7,40 @@
     <title>{% block title %}Budget Lens{% endblock %}</title>
     <link rel="stylesheet" type="text/css" href="{% static 'css/mvp.css' %}">
 </head>
-<body>
+<body style="text-align: center;">
     <header>
         <h1>Budget Lens</h1>
+        {% if user.is_authenticated %}
+        <nav style="justify-content: space-evenly;">
+            <ul style="display: flex; list-style: none; padding: 0;">
+                <li>
+                    <form action="{% url 'dashboard' %}" method="post" style="display: inline; border: none;">
+                        {% csrf_token %}
+                        <button type="submit" style="font-size: 0.8em; padding: 5px 10px;">Dashboard</button>
+                    </form>
+                </li>
+                <li>
+                    <form action="{% url 'upload' %}" method="post" style="display: inline; border: none;">
+                        {% csrf_token %}
+                        <button type="submit" style="font-size: 0.8em; padding: 5px 10px;">Upload</button>
+                    </form>
+                </li>
+                <li>
+                    <form action="{% url 'logout' %}" method="post" style="display: inline; border: none;">
+                        {% csrf_token %}
+                        <button type="submit" style="font-size: 0.8em; padding: 5px 10px;">Log Out</button>
+                    </form>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
     </header>
     <main>
         {% block content %}
         <!-- Content goes here -->
         {% endblock %}
     </main>
-    <footer>
+    <footer style="text-align: center;">
         <p>&copy; 2024 1oannis.com - All rights reserved.</p>
     </footer>
 </body>
