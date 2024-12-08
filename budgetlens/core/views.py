@@ -1,6 +1,7 @@
 """Views for the core app"""
 
 import base64
+from decimal import Decimal
 import logging
 import json
 import os
@@ -8,7 +9,7 @@ import requests
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from openai import OpenAI
-from .forms import ExpenseForm
+from .forms import ExpenseEditForm, ExpenseForm
 from .models import Expense, UserProfile
 
 
@@ -199,3 +200,39 @@ def expense(request, expense_id):
     log.debug("Expense detail: %s", expense_detail.expense_date)
     log.debug("User Currency: %s", request.user.userprofile.target_currency)
     return render(request, "expense.html", {"expense": expense_detail, "user": request.user})
+
+@login_required
+def save_expense(request, expense_id):
+    """View to save the edited expense details with currency conversion"""
+    log.debug("views : save_expense()")
+    expense_edit = Expense.objects.get(id=expense_id, user=request.user)
+
+    if request.method == "POST":
+        form = ExpenseEditForm(request.POST, instance=expense_edit)
+        if form.is_valid():
+            expense = form.save(commit=False)
+
+            user_profile = UserProfile.objects.get(user=request.user)
+            target_currency = user_profile.target_currency
+
+            exchange_rate_to_usd, exchange_rate_to_target = get_exchange_rate(
+                expense.expense_date, expense.currency, target_currency
+            )
+
+            if exchange_rate_to_usd and exchange_rate_to_target:
+                exchange_rate_to_usd = Decimal(str(exchange_rate_to_usd))
+                exchange_rate_to_target = Decimal(str(exchange_rate_to_target))
+
+                converted_amount_to_usd = expense.amount / exchange_rate_to_usd
+                converted_amount_to_target = converted_amount_to_usd * exchange_rate_to_target
+                expense.amount_in_target_currency = round(converted_amount_to_target, 2)
+
+            expense.save()
+            log.debug("Expense updated successfully")
+            return redirect('expense', expense_id=expense_id)
+        else:
+            log.error("Form errors: %s", form.errors)
+    else:
+        form = ExpenseEditForm(instance=expense_edit)
+
+    return render(request, "expense.html", {"form": form, "expense": expense_edit, "user": request.user})

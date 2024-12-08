@@ -11,7 +11,7 @@
     <header style="padding: 0rem 1rem;">
         <h1>Budget Lens</h1>
         {% if user.is_authenticated %}
-        <nav style="justify-content: space-evenly; margin-bottom: 0rem;">
+        <nav style="justify-content: center; margin-bottom: 0rem; margin-right: 1rem;">
             <ul style="display: flex; list-style: none; padding: 0;">
                 <li>
                     <form action="{% url 'dashboard' %}" method="post" style="display: inline; border: none; box-shadow: none;">
