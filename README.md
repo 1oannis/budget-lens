@@ -34,7 +34,7 @@ BudgetLens is the open-source receipt scanner and expense tracker made for self-
 - [Initialization](#initialization)
 - [Application Start](#application-start)
 - [How to Contribute](#how-to-contribute)
-- [Liscence](#liscence)
+- [License](#license)
 
 ## Architecture
 
@@ -210,6 +210,6 @@ By default you can find the login screeen at [localhost:8000](http://localhost:8
 - Participate in the code review process and make any requested changes.
 - Once your pull request is approved, it will be merged into the main repository.
 
-## Liscence
+## License
 
 This project is licensed under the [GNU General Public License v3.0](./LICENSE).
