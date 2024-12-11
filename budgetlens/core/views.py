@@ -6,6 +6,8 @@ import logging
 import json
 import os
 import requests
+from django.db.models import Sum, F, Value, FloatField
+from django.db.models.functions import Lower, Trim, Coalesce
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from openai import OpenAI
@@ -35,11 +37,23 @@ def process_receipt(image_path):
     amount = 10.00
     currency = "EUR"
 
-    base_categories = (
-        "Housing,Utilities,Transportation,Groceries,Dining Out,Healthcare,"
-        "Debt Payments,Insurance,Clothing,Entertainment,"
-        "Education,Childcare,Pet Care,Subscriptions,Miscellaneous"
-    )
+    base_categories = [
+        "Housing",
+        "Utilities",
+        "Transportation",
+        "Groceries",
+        "Dining Out",
+        "Healthcare",
+        "Debt Payments",
+        "Insurance",
+        "Clothing",
+        "Entertainment",
+        "Education",
+        "Childcare",
+        "Pet Care",
+        "Subscriptions",
+        "Miscellaneous",
+    ]
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -52,7 +66,7 @@ def process_receipt(image_path):
                         "text": (
                             "Analyze the provided receipt and extract the following details: "
                             "1. Category: Determine the category of the expense from this list: "
-                            f"{base_categories}. 2. Date: Identify the transaction date. "
+                            f"{', '.join(base_categories)}. 2.Date: Identify the transaction date. "
                             "3. Amount: Extract the expense amount as a decimal number. Consider: "
                             "- A comma may serve as a thousand separator or decimal separator. "
                             "- In KRW (Korean Won), the amount is never lower than a thousand. "
@@ -71,6 +85,7 @@ def process_receipt(image_path):
                 ],
             }
         ],
+        temperature=0.2,
     )
 
     try:
@@ -95,7 +110,10 @@ def process_receipt(image_path):
         if "/" in response_data.get("date"):
             response_data["date"] = response_data["date"].replace("/", "-")
 
-        category = response_data.get("category")
+        category = response_data.get("category", "Miscellaneous")
+        if category not in base_categories:
+            category = "Miscellaneous"
+
         expense_date = response_data.get("date")
         amount = response_data.get("amount")
         currency = response_data.get("currency").upper()
@@ -170,15 +188,19 @@ def upload_receipt(request):
                 amount_decimal = Decimal(str(amount))
 
                 converted_amount_to_usd = amount_decimal / exchange_rate_to_usd
-                converted_amount_to_target = converted_amount_to_usd * exchange_rate_to_target
-                expense_dto.amount_in_target_currency = round(converted_amount_to_target, 2)
+                converted_amount_to_target = (
+                    converted_amount_to_usd * exchange_rate_to_target
+                )
+                expense_dto.amount_in_target_currency = round(
+                    converted_amount_to_target, 2
+                )
                 log.debug("Converted amount: %s", expense_dto.amount_in_target_currency)
             else:
                 log.error("Could not convert amount to target currency")
 
             expense_dto.save()
             # Redirect to the expense page to adjust information
-            return redirect('expense', expense_id=expense_dto.id)
+            return redirect("expense", expense_id=expense_dto.id)
         else:
             log.error("Form errors: %s", form.errors)
     else:
@@ -188,9 +210,44 @@ def upload_receipt(request):
 
 @login_required
 def dashboard(request):
-    """View to display the user's expenses"""
-    expenses = Expense.objects.filter(user=request.user)
-    return render(request, "dashboard.html", {"expenses": expenses})
+    """View to display the user's expenses ordered by date and aggregated by category"""
+    expenses = Expense.objects.filter(user=request.user).order_by("-expense_date")
+
+    expenses = expenses.annotate(category_normalized=Trim(Lower(F("category"))))
+    log.debug("Normalized Category: %s", expenses.values("category_normalized"))
+
+    category_data = (
+        expenses.values("category_normalized")
+        .annotate(
+            total_amount=Coalesce(
+                Sum("amount_in_target_currency", output_field=FloatField()),
+                Value(0, output_field=FloatField()),
+            )
+        )
+        .order_by("category_normalized")
+    )
+
+    categories = [
+        (
+            item["category_normalized"].capitalize()
+            if item["category_normalized"]
+            else "Uncategorized"
+        )
+        for item in category_data
+    ]
+    amounts = [float(item["total_amount"]) for item in category_data]
+
+    log.debug("Aggregated Category Data: %s", categories)
+
+    return render(
+        request,
+        "dashboard.html",
+        {
+            "expenses": expenses,
+            "categories": json.dumps(categories),
+            "amounts": json.dumps(amounts),
+        },
+    )
 
 
 @login_required

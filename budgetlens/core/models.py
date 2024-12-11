@@ -8,7 +8,6 @@ class Expense(models.Model):
     """Model to store the expense details"""
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     receipt_image = models.ImageField(upload_to="receipts/")
-    category = models.CharField(max_length=100, blank=True, null=True)
     expense_date = models.DateField(blank=True, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     currency = models.CharField(max_length=3, blank=True, null=True)
@@ -18,6 +17,26 @@ class Expense(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     objects = models.Manager()
+
+    BASE_CATEGORIES = [
+        "Housing", "Utilities", "Transportation", "Groceries", "Dining Out", "Healthcare",
+        "Debt Payments", "Insurance", "Clothing", "Entertainment", "Education", "Childcare",
+        "Pet Care", "Subscriptions", "Miscellaneous"
+    ]
+
+    # Create choices for the category field
+    CATEGORY_CHOICES = [(category, category) for category in BASE_CATEGORIES]
+
+    # Update the category field to use choices
+    category = models.CharField(
+        max_length=100,
+        choices=CATEGORY_CHOICES,
+        blank=True,
+        null=True
+    )
+
+    def __str__(self):
+        return f"{self.category} - {self.amount} {self.currency} on {self.expense_date}"
 
 class UserProfile(models.Model):
     """Model to store the user's profile details"""

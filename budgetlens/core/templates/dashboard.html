@@ -1,23 +1,80 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<!-- dashboard.html -->
 <h2>Dashboard</h2>
-<table>
-    <tr>
-        <th>Category</th>
-        <th>Amount</th>
-        <th>Currency</th>
-        <th>Date</th>
-    </tr>
-    {% for expense in expenses %}
-    <tr onclick="window.location.href='{% url 'expense' expense.id %}'" style="cursor: pointer;">
-        {% csrf_token %}
-        <td>{{ expense.category }}</td>
-        <td>{{ expense.amount }}</td>
-        <td>{{ expense.currency }}</td>
-        <td>{{ expense.expense_date}}</td>
-    </tr>
-    {% endfor %}
-</table>
+
+{% if amounts|length > 0 %}
+<div style="width: 100%; max-width: 600px; height: 400px; margin: auto;">
+    <canvas id="expensesChart"></canvas>
+</div>
+{% else %}
+    <p>No expenses to display.</p>
+{% endif %}
+
+<!-- Existing table -->
+<div style="max-height: 400px; overflow-y: auto;">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Currency</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+            <tr onclick="window.location.href='{% url 'expense' expense.id %}'" style="cursor: pointer;">
+                <td>{{ expense.category }}</td>
+                <td>{{ expense.amount }}</td>
+                <td>{{ expense.currency }}</td>
+                <td>{{ expense.expense_date }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Script to render the chart -->
+<script>
+    var ctx = document.getElementById('expensesChart').getContext('2d');
+    var expensesChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: {{ categories|safe }},
+            datasets: [{
+                data: {{ amounts|safe }},
+                backgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF',
+                    '#FF9F40',
+                ],
+                hoverBackgroundColor: [
+                    '#FF6384',
+                    '#36A2EB',
+                    '#FFCE56',
+                    '#4BC0C0',
+                    '#9966FF',
+                    '#FF9F40',
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                title: {
+                    display: true,
+                    text: 'Expenses by Category'
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}

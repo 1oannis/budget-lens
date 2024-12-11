@@ -18,3 +18,7 @@ class ExpenseEditForm(forms.ModelForm):
     class Meta:
         model = Expense
         fields = ['category', 'expense_date', 'amount', 'currency']
+        widgets = {
+            'category': forms.Select(choices=Expense.CATEGORY_CHOICES),
+        }
+        
