@@ -59,9 +59,9 @@ def process_receipt(image_path):
                             "4. Currency: Identify the currency used in the expense starting "
                             "(three-character ISO 4217 code). Respond strictly in JSON format, "
                             "and ending with braces, without any additional markup language "
-                            "or explanation. Example response: {\"category\": \"<category>\","
-                            " \"date\": \"<date>\", \"amount\": <amount>,"
-                            " \"currency\": \"<currency>\"}"
+                            'or explanation. Example response: {"category": "<category>",'
+                            ' "date": "<date>", "amount": <amount>,'
+                            ' "currency": "<currency>"}'
                         ),
                     },
                     {
@@ -74,7 +74,11 @@ def process_receipt(image_path):
     )
 
     try:
-        if not response or not response.choices or not response.choices[0].message.content:
+        if (
+            not response
+            or not response.choices
+            or not response.choices[0].message.content
+        ):
             raise ValueError("Empty or invalid response from OpenAI API")
 
         content = response.choices[0].message.content.strip()
@@ -107,6 +111,7 @@ def process_receipt(image_path):
         log.error("Unexpected error: %s", e)
         raise
 
+
 def get_exchange_rate(date, from_currency, to_currency):
     """Get the exchange rate for the given date and currencies"""
 
@@ -135,18 +140,18 @@ def upload_receipt(request):
     if request.method == "POST":
         form = ExpenseForm(request.POST, request.FILES)
         if form.is_valid():
-            expense = form.save(commit=False)
-            expense.user = request.user
-            expense.save()
+            expense_dto = form.save(commit=False)
+            expense_dto.user = request.user
+            expense_dto.save()
 
             category, expense_date, amount, currency = process_receipt(
-                expense.receipt_image.path
+                expense_dto.receipt_image.path
             )
 
-            expense.category = category
-            expense.expense_date = expense_date
-            expense.amount = amount
-            expense.currency = currency
+            expense_dto.category = category
+            expense_dto.expense_date = expense_date
+            expense_dto.amount = amount
+            expense_dto.currency = currency
 
             user_profile = UserProfile.objects.get(user_id=request.user.id)
             target_currency = user_profile.target_currency
@@ -165,18 +170,20 @@ def upload_receipt(request):
                     converted_amount_to_usd * exchange_rate_to_target
                 )
                 log.debug("Converted amount: %s", converted_amount_to_target)
-                expense.amount_in_target_currency = round(converted_amount_to_target, 2)
+                expense_dto.amount_in_target_currency = round(
+                    converted_amount_to_target, 2
+                )
             else:
                 log.error("Could not convert amount to target currency")
 
-            expense.save()
+            expense_dto.save()
 
             response = {
                 "category": category,
                 "expense_date": expense_date,
                 "amount": amount,
                 "currency": currency,
-                "amount_in_target_currency": expense.amount_in_target_currency,
+                "amount_in_target_currency": expense_dto.amount_in_target_currency,
             }
         else:
             log.error("Form errors: %s", form.errors)
@@ -191,6 +198,7 @@ def dashboard(request):
     expenses = Expense.objects.filter(user=request.user)
     return render(request, "dashboard.html", {"expenses": expenses})
 
+
 @login_required
 def expense(request, expense_id):
     """View to display the details of a specific expense"""
@@ -199,7 +207,10 @@ def expense(request, expense_id):
     expense_detail = Expense.objects.get(id=expense_id, user=request.user)
     log.debug("Expense detail: %s", expense_detail.expense_date)
     log.debug("User Currency: %s", request.user.userprofile.target_currency)
-    return render(request, "expense.html", {"expense": expense_detail, "user": request.user})
+    return render(
+        request, "expense.html", {"expense": expense_detail, "user": request.user}
+    )
+
 
 @login_required
 def save_expense(request, expense_id):
@@ -210,29 +221,37 @@ def save_expense(request, expense_id):
     if request.method == "POST":
         form = ExpenseEditForm(request.POST, instance=expense_edit)
         if form.is_valid():
-            expense = form.save(commit=False)
+            expense_form = form.save(commit=False)
 
             user_profile = UserProfile.objects.get(user=request.user)
             target_currency = user_profile.target_currency
 
             exchange_rate_to_usd, exchange_rate_to_target = get_exchange_rate(
-                expense.expense_date, expense.currency, target_currency
+                expense_form.expense_date, expense_form.currency, target_currency
             )
 
             if exchange_rate_to_usd and exchange_rate_to_target:
                 exchange_rate_to_usd = Decimal(str(exchange_rate_to_usd))
                 exchange_rate_to_target = Decimal(str(exchange_rate_to_target))
 
-                converted_amount_to_usd = expense.amount / exchange_rate_to_usd
-                converted_amount_to_target = converted_amount_to_usd * exchange_rate_to_target
-                expense.amount_in_target_currency = round(converted_amount_to_target, 2)
+                converted_amount_to_usd = expense_form.amount / exchange_rate_to_usd
+                converted_amount_to_target = (
+                    converted_amount_to_usd * exchange_rate_to_target
+                )
+                expense_form.amount_in_target_currency = round(
+                    converted_amount_to_target, 2
+                )
 
-            expense.save()
+            expense_form.save()
             log.debug("Expense updated successfully")
-            return redirect('expense', expense_id=expense_id)
+            return redirect("expense", expense_id=expense_id)
         else:
             log.error("Form errors: %s", form.errors)
     else:
         form = ExpenseEditForm(instance=expense_edit)
 
-    return render(request, "expense.html", {"form": form, "expense": expense_edit, "user": request.user})
+    return render(
+        request,
+        "expense.html",
+        {"form": form, "expense": expense_edit, "user": request.user},
+    )
