@@ -135,7 +135,6 @@ def get_exchange_rate(date, from_currency, to_currency):
 @login_required
 def upload_receipt(request):
     """View to upload the receipt image and process it"""
-    response = None
     log.debug("views : upload_receipt()")
     if request.method == "POST":
         form = ExpenseForm(request.POST, request.FILES)
@@ -153,7 +152,7 @@ def upload_receipt(request):
             expense_dto.amount = amount
             expense_dto.currency = currency
 
-            user_profile = UserProfile.objects.get(user_id=request.user.id)
+            user_profile = UserProfile.objects.get(user=request.user)
             target_currency = user_profile.target_currency
 
             exchange_rate_to_usd, exchange_rate_to_target = get_exchange_rate(
@@ -164,32 +163,27 @@ def upload_receipt(request):
                 exchange_rate_to_usd,
                 exchange_rate_to_target,
             )
+
             if exchange_rate_to_usd and exchange_rate_to_target:
-                converted_amount_to_usd = amount / exchange_rate_to_usd
-                converted_amount_to_target = (
-                    converted_amount_to_usd * exchange_rate_to_target
-                )
-                log.debug("Converted amount: %s", converted_amount_to_target)
-                expense_dto.amount_in_target_currency = round(
-                    converted_amount_to_target, 2
-                )
+                exchange_rate_to_usd = Decimal(str(exchange_rate_to_usd))
+                exchange_rate_to_target = Decimal(str(exchange_rate_to_target))
+                amount_decimal = Decimal(str(amount))
+
+                converted_amount_to_usd = amount_decimal / exchange_rate_to_usd
+                converted_amount_to_target = converted_amount_to_usd * exchange_rate_to_target
+                expense_dto.amount_in_target_currency = round(converted_amount_to_target, 2)
+                log.debug("Converted amount: %s", expense_dto.amount_in_target_currency)
             else:
                 log.error("Could not convert amount to target currency")
 
             expense_dto.save()
-
-            response = {
-                "category": category,
-                "expense_date": expense_date,
-                "amount": amount,
-                "currency": currency,
-                "amount_in_target_currency": expense_dto.amount_in_target_currency,
-            }
+            # Redirect to the expense page to adjust information
+            return redirect('expense', expense_id=expense_dto.id)
         else:
             log.error("Form errors: %s", form.errors)
     else:
         form = ExpenseForm()
-    return render(request, "upload.html", {"form": form, "response": response})
+    return render(request, "upload.html", {"form": form})
 
 
 @login_required
