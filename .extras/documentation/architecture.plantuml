@@ -1,0 +1,19 @@
+@startuml architecture
+skinparam componentStyle rectangle
+
+node "Client" {
+    [Browser]
+}
+
+node "Server" {
+    [Django Application] <<Application>>
+}
+
+database "Database" {
+    [PostgreSQL Database] <<Database>>
+}
+
+[Browser] -right- [Django Application] : "  HTTP"
+[Django Application] -right- [PostgreSQL Database] : SQL Queries
+
+@enduml

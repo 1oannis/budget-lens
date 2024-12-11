@@ -1,4 +1,4 @@
-@startuml budget-lens
+@startuml erm
 entity UserProfile {
   * id : LONG [PK]
   * target_currency : VARCHAR(3)
@@ -20,5 +20,5 @@ entity Expense {
   --
 }
 
-UserProfile ||--o{ Expense : has
+UserProfile ||-left-o{ Expense : has
 @enduml

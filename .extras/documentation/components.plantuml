@@ -1,0 +1,13 @@
+@startuml components
+skinparam componentStyle rectangle
+
+package "Budget-Lens" {
+    [budgetlens] <<Configuration>> 
+    [core] <<Business Logic>>
+    [accounts] <<User Lifecycle>>
+}
+
+[budgetlens] -down-> [core] : configures
+[budgetlens] -down-> [accounts] : configures
+[core] -right-> [accounts] : uses
+@enduml
