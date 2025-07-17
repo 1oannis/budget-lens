@@ -67,8 +67,8 @@ The deployment architecture is kept as simple as possible with one external DB a
 
 1. First create a python virtual environment in the root directory:
 
-    ```PowerShell
-    python -m venv .venv
+    ```bash
+    python3 -m venv .venv
     ```
 
 1. Activate the venv:
@@ -82,18 +82,18 @@ The deployment architecture is kept as simple as possible with one external DB a
     - Mac / Linux:
 
         ```bash
-        source myenv/bin/activate
+        source .venv/bin/activate
         ```
 
 1. Upgrade pip if necessary:
 
-    ```PowerShell
-    python -m pip install --upgrade pip
+    ```bash
+    python3 -m pip install --upgrade pip
     ```
 
 1. Install the required dependencies:
 
-    ```PowerShell
+    ```bash
     pip install -r requirements.txt
     ```
 
@@ -108,12 +108,12 @@ After the basic installation, you have to initialize the Django App and DB prope
 
     In a terminal execute the following prompts.
 
-    ```PowerShell
-    cd .\.extras\compose
+    ```bash
+    cd ./.extras/compose
     ```
 
-    ```PowerShell
-    docker compose up
+    ```bash
+    docker compose up -d
     ```
 
 1. **Setup environment variables:**
@@ -122,7 +122,7 @@ After the basic installation, you have to initialize the Django App and DB prope
 
     - You need to create a `.env` file in the `budgetlens` directory.
 
-        ```PowerShell
+        ```bash
         cd budgetlens
         ```
 
@@ -134,7 +134,7 @@ After the basic installation, you have to initialize the Django App and DB prope
 
         - Mac / Linux:
 
-            ```PowerShell
+            ```bash
             touch .env
             ```
 
@@ -166,32 +166,32 @@ After the basic installation, you have to initialize the Django App and DB prope
 
     In another terminal window execute the following prompts.
 
-    ```PowerShell
+    ```bash
     cd budgetlens
     ```
 
-    ```PowerShell
-    python manage.py makemigrations
+    ```bash
+    python3 manage.py makemigrations
     ```
 
-    ```PowerShell
-    python manage.py migrate
+    ```bash
+    python3 manage.py migrate
     ```
 
 1. **Create a superuser for Django Admin:**
 
     Try not to forget the credentials you will create.
 
-    ```PowerShell
-    python manage.py createsuperuser
+    ```bash
+    python3 manage.py createsuperuser
     ```
 
 ## Application Start
 
 Now that we are all setup, it is time to start the application.
 
-```PowerShell
-python manage.py runserver
+```bash
+python3 manage.py runserver
 ```
 
 By default you can find the login screeen at [localhost:8000](http://localhost:8000/).

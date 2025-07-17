@@ -24,7 +24,7 @@ pathspec==0.12.1
 pdf2image==1.17.0
 pillow==11.0.0
 platformdirs==4.3.6
-psycopg2==2.9.10
+# psycopg2==2.9.10
 psycopg2-binary==2.9.10
 pydantic==2.9.2
 pydantic_core==2.23.4
